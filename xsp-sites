@@ -1,0 +1,46 @@
+#!/bin/bash
+
+function start {
+	user="$USER"
+	config=`cat /etc/xsp-sites-list`
+	for line in "$config"; do
+		command="xsp"
+		for param in $(echo "$line" | tr ";" "\n"); do
+			IN="$param"
+			set -- "$IN"
+			IFS="="; declare -a Param=($*)
+			if [ "${Param[0]}" == "user" ]; then
+				user="${Param[1]}"
+			else
+				command="$command --${Param[0]} ${Param[1]}"
+			fi
+		done
+		command="su -c \"$command --nonstop\" -s \"/bin/sh\" \"$user\" &"
+		eval "$command"	
+	done
+	exit
+}
+
+function stop {
+	killall mono -s SIGTERM
+	exit
+}
+
+case "$1" in
+"start")
+	echo "Starting server"
+	start "$XSP_USER"
+	;;
+"stop")
+	echo "Stoping server"
+	stop "$XSP_USER"
+	;;
+"restart")
+	echo "Restarting server"
+	stop "$XSP_USER"
+	start "$XSP_USER"
+	;;
+*)
+	echo "Unknown option"
+	;;
+esac
